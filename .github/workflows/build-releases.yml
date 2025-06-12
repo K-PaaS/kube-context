@@ -27,12 +27,16 @@ jobs:
           prerelease: false
 
   build_and_upload:
-    name: Build and Upload on ${{ matrix.os }}
+    name: Build and Upload on ${{ matrix.os_name }}
     needs: create_release
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os_image }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os_name: Linux
+            os_image: ubuntu-20.04
+          - os_name: macOS
+            os_image: macos-latest
 
     steps:
       - name: Checkout code
@@ -55,14 +59,14 @@ jobs:
           ./build.sh
 
       - name: Prepare Asset for Upload (macOS)
-        if: matrix.os == 'macos-latest'
+        if: matrix.os_image == 'macos-latest'
         run: |
           zip -qr KubeContextManager-macOS.zip dist/KubeContextManager.app
           echo "ASSET_PATH=KubeContextManager-macOS.zip" >> $GITHUB_ENV
           echo "ASSET_NAME=KubeContextManager-macOS.zip" >> $GITHUB_ENV
 
       - name: Prepare Asset for Upload (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os_image == 'ubuntu-20.04'
         run: |
           mv dist/KubeContextManager KubeContextManager-Linux
           echo "ASSET_PATH=KubeContextManager-Linux" >> $GITHUB_ENV
