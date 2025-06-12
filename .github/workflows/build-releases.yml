@@ -34,7 +34,7 @@ jobs:
       matrix:
         include:
           - os_name: Linux
-            os_image: ubuntu-20.04
+            os_image: ubuntu-22.04
           - os_name: macOS
             os_image: macos-latest
 
@@ -66,7 +66,7 @@ jobs:
           echo "ASSET_NAME=KubeContextManager-macOS.zip" >> $GITHUB_ENV
 
       - name: Prepare Asset for Upload (Linux)
-        if: matrix.os_image == 'ubuntu-20.04'
+        if: matrix.os_image == 'ubuntu-22.04'
         run: |
           mv dist/KubeContextManager KubeContextManager-Linux
           echo "ASSET_PATH=KubeContextManager-Linux" >> $GITHUB_ENV
