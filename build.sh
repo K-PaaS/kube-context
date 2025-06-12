@@ -32,27 +32,28 @@ rm -rf build/ dist/ "$APP_NAME.spec"
 # Run PyInstaller with platform-specific options
 pyinstaller "${PYINSTALLER_OPTS[@]}" "$ENTRY_POINT"
 
-# Check if the build was successful
-BUILD_SUCCESS=false
+# Check if the build was successful and exit if not.
 if [ "$OS" == "Darwin" ]; then
     # On macOS, check for the .app bundle
-    if [ -d "dist/$APP_NAME.app" ]; then
-        BUILD_SUCCESS=true
+    if [ ! -d "dist/$APP_NAME.app" ]; then
+        echo "========================================"
+        echo "Build failed: dist/$APP_NAME.app not found."
+        echo "Please check the PyInstaller output above for errors."
+        echo "========================================"
+        exit 1
     fi
 elif [ "$OS" == "Linux" ]; then
     # On Linux, check for the executable file
-    if [ -f "dist/$APP_NAME" ]; then
-        BUILD_SUCCESS=true
+    if [ ! -f "dist/$APP_NAME" ]; then
+        echo "========================================"
+        echo "Build failed: dist/$APP_NAME not found."
+        echo "Please check the PyInstaller output above for errors."
+        echo "========================================"
+        exit 1
     fi
 fi
 
-if [ "$BUILD_SUCCESS" = true ]; then
-    echo "========================================"
-    echo "Build successful!"
-    echo "Executable created in the 'dist' directory."
-    echo "========================================"
-else
-    echo "========================================"
-    echo "Build failed. Please check the output above for errors."
-    echo "========================================"
-fi
+echo "========================================"
+echo "Build successful!"
+echo "Executable created in the 'dist' directory."
+echo "========================================
