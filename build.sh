@@ -56,4 +56,4 @@ fi
 echo "========================================"
 echo "Build successful!"
 echo "Executable created in the 'dist' directory."
-echo "========================================
+echo "========================================"
