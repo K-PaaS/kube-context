@@ -35,7 +35,7 @@ jobs:
       matrix:
         include:
           - os_name: macOS-Intel
-            os_image: macos-12 # Intel-based runner
+            os_image: macos-latest # Intel-based runner
             asset_name_prefix: KubeContextManager-macOS-Intel
             asset_content_type: application/x-apple-diskimage
             arch: x86_64
