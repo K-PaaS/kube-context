@@ -29,7 +29,7 @@ jobs:
     name: Build and Upload on ${{ matrix.os_name }}
     needs: create_release
     permissions:
-      contents: read
+      contents: write
     runs-on: ${{ matrix.os_image }}
     strategy:
       fail-fast: false
