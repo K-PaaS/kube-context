@@ -31,12 +31,27 @@ jobs:
     needs: create_release
     runs-on: ${{ matrix.os_image }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os_name: Linux
             os_image: ubuntu-22.04
-          - os_name: macOS
-            os_image: macos-latest
+            asset_name_prefix: KubeContextManager-Linux
+            asset_content_type: application/octet-stream
+            arch: x86_64
+            MACOSX_DEPLOYMENT_TARGET: '' # Not needed for Linux
+          - os_name: macOS-Intel
+            os_image: macos-12 # Intel-based runner
+            asset_name_prefix: KubeContextManager-macOS-Intel
+            asset_content_type: application/x-apple-diskimage
+            arch: x86_64
+            MACOSX_DEPLOYMENT_TARGET: '11.0' # Target Big Sur or later
+          - os_name: macOS-AppleSilicon
+            os_image: macos-14 # ARM64 (Apple Silicon) based runner
+            asset_name_prefix: KubeContextManager-macOS-AppleSilicon
+            asset_content_type: application/x-apple-diskimage
+            arch: arm64
+            MACOSX_DEPLOYMENT_TARGET: '12.0' # Target Monterey or later
 
     steps:
       - name: Checkout code
@@ -70,39 +85,40 @@ jobs:
               libxcb-xkb1 \
               libxcb-glx0
           fi
-          if [ "${{ matrix.os_name }}" == "macOS" ]; then
+          if startsWith(matrix.os_name, 'macOS'); then # Check if os_name starts with macOS
             brew install create-dmg
           fi
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build the application
+      - name: Build Application
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
         run: |
           chmod +x build.sh
           ./build.sh
 
       - name: Prepare Asset for Upload (macOS)
-        if: matrix.os_image == 'macos-latest'
+        if: startsWith(matrix.os_name, 'macOS') # Check if os_name starts with macOS
         run: |
           create-dmg \
-            --volname "KubeContextManager Installer" \
+            --volname "${{ matrix.asset_name_prefix }} Installer" \
             --window-pos 200 120 \
             --window-size 800 400 \
             --icon-size 100 \
             --icon "KubeContextManager.app" 200 190 \
             --hide-extension "KubeContextManager.app" \
             --app-drop-link 600 185 \
-            "KubeContextManager-macOS.dmg" \
+            "${{ matrix.asset_name_prefix }}.dmg" \
             "dist/KubeContextManager.app"
-          echo "ASSET_PATH=KubeContextManager-macOS.dmg" >> $GITHUB_ENV
-          echo "ASSET_NAME=KubeContextManager-macOS.dmg" >> $GITHUB_ENV
+          echo "ASSET_PATH=${{ matrix.asset_name_prefix }}.dmg" >> $GITHUB_ENV
+          echo "ASSET_NAME=${{ matrix.asset_name_prefix }}.dmg" >> $GITHUB_ENV
 
       - name: Prepare Asset for Upload (Linux)
-        if: matrix.os_image == 'ubuntu-22.04'
+        if: matrix.os_name == 'Linux'
         run: |
-          mv dist/KubeContextManager KubeContextManager-Linux
-          echo "ASSET_PATH=KubeContextManager-Linux" >> $GITHUB_ENV
-          echo "ASSET_NAME=KubeContextManager-Linux" >> $GITHUB_ENV
+          echo "ASSET_PATH=dist/${{ matrix.asset_name_prefix }}" >> $GITHUB_ENV
+          echo "ASSET_NAME=${{ matrix.asset_name_prefix }}" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
