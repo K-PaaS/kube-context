@@ -73,7 +73,7 @@ jobs:
           ./build.sh
 
       - name: Prepare Asset for Upload (macOS)
-        if: startsWith(matrix.os_name, 'macOS') # Check if os_name starts with macOS
+        if: ${{ startsWith(matrix.os_name, 'macOS') }} # Check if os_name starts with macOS
         run: |
           create-dmg \
             --volname "${{ matrix.asset_name_prefix }} Installer" \
