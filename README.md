@@ -39,14 +39,56 @@ The easiest way to get started is to download the latest pre-built executable fo
 
 You can also download and run the application directly from your terminal:
 
+### Notes for Linux Users
+
+KubeContextManager is primarily recommended for use on **macOS and Windows desktop environments**.
+
+For **Linux desktop environments** (e.g., Ubuntu Desktop, Fedora Workstation), the application can be run directly after ensuring the necessary libraries are installed.
+
+**Required System Libraries on Linux:**
+
+When running the pre-built Linux executable or building from source, you might need to install the following system libraries. On Debian/Ubuntu-based systems, you can install them using `apt-get`:
+
 ```bash
-# Replace vX.Y.Z with the latest version from the releases page
-VERSION="v0.1.0"
+sudo apt-get update
+sudo apt-get install -y \
+    libgl1-mesa-glx \
+    libegl1 \
+    libxkbcommon0 \
+    libxkbcommon-x11-0 \
+    libxcb-cursor0 \
+    libxcb-icccm4 \
+    libxcb-image0 \
+    libxcb-keysyms1 \
+    libxcb-randr0 \
+    libxcb-render-util0 \
+    libxcb-shape0 \
+    libxcb-shm0 \
+    libxcb-xfixes0 \
+    libxcb-xinerama0 \
+    libxcb-xkb1 \
+    libxcb-glx0
+```
 
-# Download using wget
-wget -O KubeContextManager https://github.com/suslmk-lee/kube-context/releases/download/${VERSION}/KubeContextManager-Linux
+**Running on a Headless Linux Server (e.g., via SSH):**
 
-# Or download using curl
+If you need to run KubeContextManager on a Linux server without a graphical desktop environment, you will need to use X11 forwarding. Connect to your server using `ssh -X` or `ssh -Y`:
+
+```bash
+ssh -X user@your_server_ip
+# Then navigate to the directory containing KubeContextManager and run it
+./KubeContextManager
+```
+This will forward the application's GUI to your local machine. Ensure your local machine has an X server running (e.g., XQuartz on macOS, Xming/VcXsrv on Windows).
+
+---
+
+```bash
+# Example for Linux (replace ${VERSION} with the actual version, e.g., v1.0.0)
+# export VERSION="v1.0.0" # Or get the latest tag automatically
+export VERSION=$(curl -s https://api.github.com/repos/suslmk-lee/kube-context/releases/latest | grep 'tag_name' | cut -d\" -f4)
+
+# Download using wgetcurl
 # curl -L -o KubeContextManager https://github.com/suslmk-lee/kube-context/releases/download/${VERSION}/KubeContextManager-Linux
 
 # Make it executable
@@ -88,12 +130,17 @@ This project uses `PyInstaller` to create executables. The build process is auto
 
 To build the application locally:
 
-1.  Install build dependencies:
+1.  Clone the repository and navigate into it (if not already done):
     ```bash
+    git clone https://github.com/suslmk-lee/kube-context.git
+    cd kube-context
+    ```
+2.  Install Python dependencies and build tools:
+    ```bash
+    pip install -r requirements.txt
     pip install pyinstaller
     ```
-
-2.  Run the build script:
+3.  Run the build script:
     ```bash
     chmod +x build.sh
     ./build.sh
