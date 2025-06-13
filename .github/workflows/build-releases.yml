@@ -70,6 +70,9 @@ jobs:
               libxcb-xkb1 \
               libxcb-glx0
           fi
+          if [ "${{ matrix.os_name }}" == "macOS" ]; then
+            brew install create-dmg
+          fi
           pip install -r requirements.txt
           pip install pyinstaller
 
@@ -81,9 +84,18 @@ jobs:
       - name: Prepare Asset for Upload (macOS)
         if: matrix.os_image == 'macos-latest'
         run: |
-          zip -qr KubeContextManager-macOS.zip dist/KubeContextManager.app
-          echo "ASSET_PATH=KubeContextManager-macOS.zip" >> $GITHUB_ENV
-          echo "ASSET_NAME=KubeContextManager-macOS.zip" >> $GITHUB_ENV
+          create-dmg \
+            --volname "KubeContextManager Installer" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "KubeContextManager.app" 200 190 \
+            --hide-extension "KubeContextManager.app" \
+            --app-drop-link 600 185 \
+            "KubeContextManager-macOS.dmg" \
+            "dist/KubeContextManager.app"
+          echo "ASSET_PATH=KubeContextManager-macOS.dmg" >> $GITHUB_ENV
+          echo "ASSET_NAME=KubeContextManager-macOS.dmg" >> $GITHUB_ENV
 
       - name: Prepare Asset for Upload (Linux)
         if: matrix.os_image == 'ubuntu-22.04'
