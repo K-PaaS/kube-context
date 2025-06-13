@@ -20,6 +20,7 @@ PYINSTALLER_OPTS=(
     --hidden-import="PySide6.QtWidgets"
     --hidden-import="PySide6.QtGui"
     --hidden-import="PySide6.QtCore"
+    --osx-bundle-identifier "com.kpaas.kubecontextmanager"
 )
 
 echo "========================================"
