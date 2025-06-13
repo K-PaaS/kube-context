@@ -37,20 +37,24 @@ rm -rf build dist "$APP_NAME.app" "$APP_NAME.dmg"
 # Build the application
 if [ "$OS" == "Darwin" ]; then
     echo "Running PyInstaller for macOS..."
-    # MACOSX_DEPLOYMENT_TARGET 환경 변수가 비어있지 않은지 확인하고 PyInstaller 옵션에 추가
-    if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
-        echo "Using explicit --macos-target-version: $MACOSX_DEPLOYMENT_TARGET"
-        pyinstaller "${PYINSTALLER_OPTS[@]}" --macos-target-version "$MACOSX_DEPLOYMENT_TARGET" "$ENTRY_POINT"
-    else
-        echo "Warning: MACOSX_DEPLOYMENT_TARGET is not set. PyInstaller will use its default."
-        pyinstaller "${PYINSTALLER_OPTS[@]}" "$ENTRY_POINT"
-    fi
+    # --macos-target-version 옵션 제거
+    pyinstaller "${PYINSTALLER_OPTS[@]}" "$ENTRY_POINT"
 
     if [ ! -d "dist/$APP_NAME.app" ]; then
         echo "Error: PyInstaller did not create the .app bundle correctly."
         exit 1
     fi
     echo "$APP_NAME.app bundle created successfully."
+
+    # PlistBuddy를 사용하여 LSMinimumSystemVersion 설정
+    PLIST_FILE="dist/$APP_NAME.app/Contents/Info.plist"
+    if [ -f "$PLIST_FILE" ] && [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
+        echo "Setting LSMinimumSystemVersion to $MACOSX_DEPLOYMENT_TARGET in $PLIST_FILE"
+        /usr/libexec/PlistBuddy -c "Delete :LSMinimumSystemVersion" "$PLIST_FILE" 2>/dev/null # 기존 값 삭제 (오류 무시)
+        /usr/libexec/PlistBuddy -c "Add :LSMinimumSystemVersion string $MACOSX_DEPLOYMENT_TARGET" "$PLIST_FILE"
+    else
+        echo "Warning: Info.plist not found or MACOSX_DEPLOYMENT_TARGET not set. Skipping LSMinimumSystemVersion update."
+    fi
 
     echo "Creating DMG..."
     create-dmg \
