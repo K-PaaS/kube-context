@@ -11,7 +11,38 @@ from typing import Dict, List, Optional
 
 class KubeConfigManager:
     def __init__(self, config_path: Optional[str] = None):
-        self.config_path = config_path or os.path.expanduser("~/.kube/config")
+        if config_path:
+            self.config_path = config_path
+        else:
+            # Use more reliable home directory detection for Windows
+            if platform.system() == "Windows":
+                # Try multiple methods to get the correct user home directory
+                home_dir = None
+                
+                # Method 1: USERPROFILE environment variable (most reliable)
+                if 'USERPROFILE' in os.environ:
+                    home_dir = os.environ['USERPROFILE']
+                
+                # Method 2: USERNAME + HOMEDRIVE/HOMEPATH
+                elif 'USERNAME' in os.environ and 'HOMEDRIVE' in os.environ and 'HOMEPATH' in os.environ:
+                    home_dir = os.path.join(os.environ['HOMEDRIVE'], os.environ['HOMEPATH'])
+                
+                # Method 3: USERNAME with default C:\Users
+                elif 'USERNAME' in os.environ:
+                    home_dir = os.path.join('C:', 'Users', os.environ['USERNAME'])
+                
+                # Method 4: Fallback to expanduser
+                else:
+                    home_dir = os.path.expanduser('~')
+                
+                self.config_path = os.path.join(home_dir, '.kube', 'config')
+                
+                # Debug: Print the detected paths (can be removed in production)
+                print(f"DEBUG: Detected home directory: {home_dir}")
+                print(f"DEBUG: Config path will be: {self.config_path}")
+            else:
+                self.config_path = os.path.expanduser("~/.kube/config")
+        
         self.config_dir = os.path.dirname(self.config_path)
         self.backup_path = f"{self.config_path}.backup"
         self._ensure_config_exists()
