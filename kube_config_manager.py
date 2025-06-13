@@ -27,10 +27,33 @@ class KubeConfigManager:
             else:
                 return os.path.join(base_path, 'ncp-iam-authenticator')
 
-        # Not in a bundle, use standard paths
+        # Not in a bundle, try to find in PATH first
         if platform.system() == "Windows":
-            return os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "ncp-iam-authenticator", "ncp-iam-authenticator.exe")
+            # Try to find in PATH first
+            found_in_path = shutil.which('ncp-iam-authenticator.exe')
+            if found_in_path:
+                return found_in_path
+            
+            # If not in PATH, try common installation locations
+            possible_paths = [
+                os.path.join(os.environ.get("ProgramFiles", "C:\\Program Files"), "ncp-iam-authenticator", "ncp-iam-authenticator.exe"),
+                os.path.join(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"), "ncp-iam-authenticator", "ncp-iam-authenticator.exe"),
+                os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~\\AppData\\Local")), "ncp-iam-authenticator", "ncp-iam-authenticator.exe"),
+                os.path.join(os.path.expanduser("~"), "bin", "ncp-iam-authenticator.exe"),
+                "ncp-iam-authenticator.exe"  # Will be checked via shutil.which later
+            ]
+            
+            for path in possible_paths:
+                if os.path.exists(path):
+                    return path
+            
+            # Return the first common path as fallback
+            return possible_paths[0]
         else:
+            # For Unix-like systems, try PATH first
+            found_in_path = shutil.which('ncp-iam-authenticator')
+            if found_in_path:
+                return found_in_path
             return "/usr/local/bin/ncp-iam-authenticator"
 
     def check_ncp_authenticator_exists(self, authenticator_path=None):
@@ -38,17 +61,38 @@ class KubeConfigManager:
         path_to_check = authenticator_path or self._get_default_ncp_authenticator_path()
         
         # Try to find in PATH if not found at default/specified absolute path
-        if not os.path.exists(path_to_check) and not os.path.isabs(path_to_check):
-            found_in_path = shutil.which(path_to_check)
-            if found_in_path:
-                path_to_check = found_in_path
+        if not os.path.exists(path_to_check):
+            # If it's not an absolute path or doesn't exist, try PATH
+            if not os.path.isabs(path_to_check) or os.path.basename(path_to_check) == path_to_check:
+                exe_name = 'ncp-iam-authenticator.exe' if platform.system() == "Windows" else 'ncp-iam-authenticator'
+                found_in_path = shutil.which(exe_name)
+                if found_in_path:
+                    path_to_check = found_in_path
+                else:
+                    error_msg = f"ncp-iam-authenticator not found in PATH or at the specified location."
+                    if platform.system() == "Windows":
+                        error_msg += f"\n\nPlease ensure ncp-iam-authenticator.exe is:\n"
+                        error_msg += f"1. Available in your system PATH, or\n"
+                        error_msg += f"2. Installed in one of these locations:\n"
+                        error_msg += f"   - C:\\Program Files\\ncp-iam-authenticator\\ncp-iam-authenticator.exe\n"
+                        error_msg += f"   - %LOCALAPPDATA%\\ncp-iam-authenticator\\ncp-iam-authenticator.exe\n"
+                        error_msg += f"   - %USERPROFILE%\\bin\\ncp-iam-authenticator.exe\n"
+                        error_msg += f"3. Or provide the full path to the executable."
+                    else:
+                        error_msg += f"\n\nPlease install ncp-iam-authenticator or provide the correct path."
+                    raise FileNotFoundError(error_msg)
             else:
-                 raise FileNotFoundError(f"'{path_to_check}' not found in PATH or at the specified location. Please install ncp-iam-authenticator or provide the correct path.")
-        elif not os.path.exists(path_to_check):
-            raise FileNotFoundError(f"ncp-iam-authenticator not found at {path_to_check}. Please install it or provide the correct path.")
+                error_msg = f"ncp-iam-authenticator not found at {path_to_check}."
+                if platform.system() == "Windows":
+                    error_msg += f"\n\nPlease check if the path is correct and the file exists."
+                else:
+                    error_msg += f" Please install it or provide the correct path."
+                raise FileNotFoundError(error_msg)
 
-        if not os.access(path_to_check, os.X_OK):
+        # Check if file is executable (skip on Windows as .exe files are inherently executable)
+        if platform.system() != "Windows" and not os.access(path_to_check, os.X_OK):
             raise PermissionError(f"ncp-iam-authenticator at {path_to_check} is not executable. Please check permissions.")
+        
         return path_to_check
 
     def add_nks_context(self, cluster_uuid, region, alias=None, authenticator_path=None, kubeconfig_path=None):
