@@ -34,12 +34,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os_name: Linux
-            os_image: ubuntu-22.04
-            asset_name_prefix: KubeContextManager-Linux
-            asset_content_type: application/octet-stream
-            arch: x86_64
-            MACOSX_DEPLOYMENT_TARGET: '' # Not needed for Linux
           - os_name: macOS-Intel
             os_image: macos-12 # Intel-based runner
             asset_name_prefix: KubeContextManager-macOS-Intel
@@ -65,27 +59,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ "${{ matrix.os_name }}" == "Linux" ]; then
-            sudo apt-get update
-            sudo apt-get install -y \
-              libgl1-mesa-glx \
-              libegl1 \
-              libxkbcommon0 \
-              libxkbcommon-x11-0 \
-              libxcb-cursor0 \
-              libxcb-icccm4 \
-              libxcb-image0 \
-              libxcb-keysyms1 \
-              libxcb-randr0 \
-              libxcb-render-util0 \
-              libxcb-shape0 \
-              libxcb-shm0 \
-              libxcb-xfixes0 \
-              libxcb-xinerama0 \
-              libxcb-xkb1 \
-              libxcb-glx0
-          fi
-          if startsWith(matrix.os_name, 'macOS'); then # Check if os_name starts with macOS
+          if ${{ startsWith(matrix.os_name, 'macOS') }}; then # Check if os_name starts with macOS
             brew install create-dmg
           fi
           pip install -r requirements.txt
@@ -113,12 +87,6 @@ jobs:
             "dist/KubeContextManager.app"
           echo "ASSET_PATH=${{ matrix.asset_name_prefix }}.dmg" >> $GITHUB_ENV
           echo "ASSET_NAME=${{ matrix.asset_name_prefix }}.dmg" >> $GITHUB_ENV
-
-      - name: Prepare Asset for Upload (Linux)
-        if: matrix.os_name == 'Linux'
-        run: |
-          echo "ASSET_PATH=dist/${{ matrix.asset_name_prefix }}" >> $GITHUB_ENV
-          echo "ASSET_NAME=${{ matrix.asset_name_prefix }}" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
