@@ -8,10 +8,9 @@ on:
 jobs:
   create_release:
     name: Create Release
-    permissions: # 이 블록과 하위 키들의 들여쓰기를 확인해주세요.
-      contents: write # actions/create-release@v1 은 contents:write 권장
-      releases: write # 릴리스 생성/수정에 필요
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
@@ -28,10 +27,9 @@ jobs:
 
   build_and_upload:
     name: Build and Upload on ${{ matrix.os_name }}
-    permissions: # 이 블록과 하위 키들의 들여쓰기를 확인해주세요.
-      contents: read   # actions/checkout@v4 에 필요
-      releases: write # actions/upload-release-asset@v1 에 필요
     needs: create_release
+    permissions:
+      contents: read
     runs-on: ${{ matrix.os_image }}
     strategy:
       fail-fast: false
@@ -63,7 +61,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if ${{ startsWith(matrix.os_name, 'macOS') }}; then # Check if os_name starts with macOS
+          if [[ "${{ matrix.os_name }}" == macOS* ]]; then
             brew install create-dmg
           fi
           pip install -r requirements.txt
@@ -77,7 +75,7 @@ jobs:
           ./build.sh
 
       - name: Prepare Asset for Upload (macOS)
-        if: ${{ startsWith(matrix.os_name, 'macOS') }} # Check if os_name starts with macOS
+        if: startsWith(matrix.os_name, 'macOS')
         run: |
           create-dmg \
             --volname "${{ matrix.asset_name_prefix }} Installer" \
