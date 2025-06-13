@@ -63,15 +63,25 @@ jobs:
           if [[ "${{ matrix.os_name }}" == macOS* ]]; then
             brew install create-dmg
           fi
-          pip install -r requirements.txt
-          pip install pyinstaller
+          if [[ "${{ matrix.os_name }}" == "macOS-Intel" ]]; then
+            arch -x86_64 pip install -r requirements.txt
+            arch -x86_64 pip install pyinstaller
+          else
+            pip install -r requirements.txt
+            pip install pyinstaller
+          fi
 
       - name: Build Application
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
+          ARCHFLAGS: ${{ matrix.os_name == 'macOS-Intel' && '-arch x86_64' || '' }}
         run: |
           chmod +x build.sh
-          ./build.sh
+          if [[ "${{ matrix.os_name }}" == "macOS-Intel" ]]; then
+            arch -x86_64 ./build.sh
+          else
+            ./build.sh
+          fi
 
       - name: Prepare Asset for Upload (macOS)
         if: startsWith(matrix.os_name, 'macOS')
