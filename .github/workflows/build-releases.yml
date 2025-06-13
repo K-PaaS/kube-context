@@ -5,13 +5,12 @@ on:
     tags:
       - 'v*' # Runs on tags like v1.0, v1.2.3
 
-permissions:
-  contents: write
-  releases: write
-
 jobs:
   create_release:
     name: Create Release
+    permissions:
+      contents: write # 태그가 이미 존재하므로 'read'도 가능할 수 있으나, create-release 액션은 'write'를 권장.
+      releases: write
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -29,6 +28,9 @@ jobs:
 
   build_and_upload:
     name: Build and Upload on ${{ matrix.os_name }}
+    permissions:
+      contents: read   # actions/checkout 에 필요
+      releases: write # actions/upload-release-asset 에 필요
     needs: create_release
     runs-on: ${{ matrix.os_image }}
     strategy:
