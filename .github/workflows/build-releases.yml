@@ -36,11 +36,11 @@ jobs:
       matrix:
         include:
           - os_name: macOS-Intel
-            os_image: macos-13 # Intel-based runner
+            os_image: macos-12 # Intel-based runner
             asset_name_prefix: KubeContextManager-macOS-Intel
             asset_content_type: application/x-apple-diskimage
             arch: x86_64
-            MACOSX_DEPLOYMENT_TARGET: '11.0' # Target Big Sur or later
+            MACOSX_DEPLOYMENT_TARGET: '10.15' # Target Catalina or later
           - os_name: macOS-AppleSilicon
             os_image: macos-14 # ARM64 (Apple Silicon) based runner
             asset_name_prefix: KubeContextManager-macOS-AppleSilicon
@@ -63,25 +63,15 @@ jobs:
           if [[ "${{ matrix.os_name }}" == macOS* ]]; then
             brew install create-dmg
           fi
-          if [[ "${{ matrix.os_name }}" == "macOS-Intel" ]]; then
-            arch -x86_64 pip install -r requirements.txt
-            arch -x86_64 pip install pyinstaller
-          else
-            pip install -r requirements.txt
-            pip install pyinstaller
-          fi
+          pip install -r requirements.txt
+          pip install pyinstaller
 
       - name: Build Application
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
-          ARCHFLAGS: ${{ matrix.os_name == 'macOS-Intel' && '-arch x86_64' || '' }}
         run: |
           chmod +x build.sh
-          if [[ "${{ matrix.os_name }}" == "macOS-Intel" ]]; then
-            arch -x86_64 ./build.sh
-          else
-            ./build.sh
-          fi
+          ./build.sh
 
       - name: Prepare Asset for Upload (macOS)
         if: startsWith(matrix.os_name, 'macOS')
