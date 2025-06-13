@@ -6,28 +6,8 @@ on:
       - 'v*' # Runs on tags like v1.0, v1.2.3
 
 jobs:
-  create_release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-  build_and_upload:
-    name: Build and Upload on ${{ matrix.os_name }}
-    needs: create_release
+  build_and_release:
+    name: Build and Release on ${{ matrix.os_name }}
     permissions:
       contents: write
     runs-on: ${{ matrix.os_image }}
@@ -36,7 +16,7 @@ jobs:
       matrix:
         include:
           - os_name: macOS-Intel
-            os_image: macos-latest-large # Intel Mac runner
+            os_image: macos-13 # Intel Mac runner
             asset_name_prefix: KubeContextManager-macOS-Intel
             asset_content_type: application/x-apple-diskimage
             arch: x86_64
@@ -97,8 +77,6 @@ jobs:
             --app-drop-link 600 185 \
             "${{ matrix.asset_name_prefix }}.dmg" \
             "dist/KubeContextManager.app"
-          echo "ASSET_PATH=${{ matrix.asset_name_prefix }}.dmg" >> $GITHUB_ENV
-          echo "ASSET_NAME=${{ matrix.asset_name_prefix }}.dmg" >> $GITHUB_ENV
 
       - name: Prepare Asset for Upload (Windows)
         if: matrix.os_name == 'Windows'
@@ -107,15 +85,15 @@ jobs:
           cd dist
           7z a "../${{ matrix.asset_name_prefix }}.zip" KubeContextManager.exe
           cd ..
-          echo "ASSET_PATH=${{ matrix.asset_name_prefix }}.zip" >> $GITHUB_ENV
-          echo "ASSET_NAME=${{ matrix.asset_name_prefix }}.zip" >> $GITHUB_ENV
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ startsWith(matrix.os_name, 'macOS') && format('{0}.dmg', matrix.asset_name_prefix) || format('{0}.zip', matrix.asset_name_prefix) }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ env.ASSET_PATH }}
-          asset_name: ${{ env.ASSET_NAME }}
-          asset_content_type: application/octet-stream
